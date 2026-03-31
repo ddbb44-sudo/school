@@ -29,8 +29,8 @@
                         primary: 'rgb(var(--color-primary) / <alpha-value>)',
                         primaryLight: 'rgb(var(--color-primary-light) / <alpha-value>)',
                         bgMain: 'rgb(var(--color-bg) / <alpha-value>)',
-                        success: '#4ade80', // Green
-                        warning: '#fbbf24', // Amber/Gold
+                        success: '#4ade80',
+                        warning: '#fbbf24',
                     },
                     fontFamily: {
                         sans: ['"Tajawal"', 'sans-serif'],
@@ -44,18 +44,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* الألوان الافتراضية (للأولاد - أزرق سماوي) */
         :root {
-            --color-primary: 56 189 248;       /* #38bdf8 */
-            --color-primary-light: 224 242 254; /* #e0f2fe */
-            --color-bg: 240 249 255;           /* #f0f9ff */
+            --color-primary: 56 189 248;
+            --color-primary-light: 224 242 254;
+            --color-bg: 240 249 255;
         }
 
-        /* ألوان البنات (وردي) */
         [data-theme="girl"] {
-            --color-primary: 244 114 182;       /* #f472b6 */
-            --color-primary-light: 252 231 243; /* #fce7f3 */
-            --color-bg: 253 242 248;           /* #fdf2f8 */
+            --color-primary: 244 114 182;
+            --color-primary-light: 252 231 243;
+            --color-bg: 253 242 248;
         }
 
         body {
@@ -66,7 +64,6 @@
             transition: background-color 0.5s ease;
         }
 
-        /* Smooth fade transitions */
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         .fade-out { animation: fadeOut 0.4s ease-out forwards; }
 
@@ -90,19 +87,16 @@
             100% { transform: scale(1); }
         }
 
-        /* Hide scrollbar */
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="text-slate-800 h-screen w-screen overflow-hidden flex flex-col items-center">
 
-    <!-- شاشة التحميل -->
     <div id="loadingScreen" class="fixed inset-0 bg-primaryLight z-50 flex flex-col items-center justify-center">
         <i class="ph-duotone ph-mosque text-6xl text-primary animate-bounce mb-4"></i>
         <h1 class="text-3xl font-bold text-slate-700">جاري تحميل أوقات الصلاة...</h1>
     </div>
 
-    <!-- شاشة تسجيل الدخول / إدخال الاسم فقط (يتعرف على الجنس تلقائياً) -->
     <div id="loginScreen" class="hidden fixed inset-0 bg-primaryLight z-40 flex flex-col items-center justify-center p-6">
         <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center fade-in">
             <i class="ph-duotone ph-star text-5xl text-warning mb-4 inline-block"></i>
@@ -117,7 +111,6 @@
         </div>
     </div>
 
-    <!-- شاشة الترحيب اليومية -->
     <div id="dailyWelcomeScreen" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-6">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center fade-in">
             <i id="welcomeIcon" class="ph-duotone text-7xl text-warning mb-4 inline-block pulse-soft"></i>
@@ -131,13 +124,10 @@
         </div>
     </div>
 
-    <!-- لوحة التحكم الرئيسية -->
     <div id="mainDashboard" class="hidden w-full max-w-2xl h-full flex-col relative">
 
-        <!-- الشريط العلوي والوقت/التاريخ/النجوم -->
         <header class="bg-white px-6 pt-8 pb-6 rounded-b-3xl shadow-sm z-10 flex flex-col gap-5">
             <div class="flex justify-between items-center">
-                <!-- معلومات الطفل والوقت -->
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-800">أهلاً، <span id="dashName" class="text-primary"></span>!</h2>
                     <div class="flex items-center gap-2 text-slate-500 font-medium text-sm mt-2 bg-slate-50 inline-flex px-3 py-1.5 rounded-lg border border-slate-100">
@@ -147,7 +137,6 @@
                     </div>
                 </div>
 
-                <!-- إجمالي النجوم والإعدادات -->
                 <div class="flex flex-col items-end gap-2">
                     <button onclick="openSettings()" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-primary transition border border-slate-100">
                         <i class="ph-fill ph-gear text-xl"></i>
@@ -158,7 +147,6 @@
                 </div>
             </div>
 
-            <!-- شريط متابعة الصلوات -->
             <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center" dir="rtl">
                 <div class="text-center" id="tracker-Fajr">
                     <div class="w-12 h-12 rounded-full bg-slate-200 mx-auto flex items-center justify-center mb-1 transition-all" id="icon-Fajr">
@@ -193,10 +181,8 @@
             </div>
         </header>
 
-        <!-- منطقة المحتوى الرئيسية -->
         <main class="flex-1 overflow-y-auto p-6 flex flex-col justify-center items-center relative">
 
-            <!-- عداد الصلاة القادمة -->
             <div id="countdownWidget" class="bg-white rounded-3xl p-8 shadow-lg w-full text-center border-4 border-primaryLight relative overflow-hidden">
                 <div class="absolute -top-10 -left-10 text-primary opacity-10">
                     <i class="ph-fill ph-clock text-9xl"></i>
@@ -223,7 +209,6 @@
                 </div>
             </div>
 
-            <!-- نافذة وقت الصلاة النشط -->
             <div id="activePrayerCard" class="hidden absolute inset-0 m-6 bg-white rounded-3xl shadow-2xl border-4 border-success p-8 flex-col justify-center items-center text-center z-20">
                 <div class="pulse-soft bg-green-100 text-success p-6 rounded-full mb-4">
                     <i class="ph-fill ph-mosque text-7xl"></i>
@@ -254,7 +239,6 @@
         </main>
     </div>
 
-    <!-- نافذة الرسائل المنبثقة -->
     <div id="messageModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 fade-in">
         <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center relative">
             <button onclick="closeModal('messageModal')" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600">
@@ -269,7 +253,6 @@
         </div>
     </div>
 
-    <!-- نافذة الإعدادات -->
     <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 fade-in">
         <div class="bg-white p-6 rounded-3xl shadow-xl w-full max-w-sm">
             <div class="flex justify-between items-center mb-6">
@@ -280,8 +263,6 @@
             </div>
 
             <div class="space-y-4">
-
-                <!-- اختيار المدينة -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <label class="block text-slate-700 font-bold mb-2">المدينة (لحساب أوقات الصلاة):</label>
                     <select id="citySelect" onchange="changeCity(this.value)" class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:outline-none bg-white text-slate-800 text-lg">
@@ -314,14 +295,13 @@
     </div>
 
     <script>
-        // --- إدارة الحالة State Management ---
         const APP_VERSION = "1.2.0";
         const STORAGE_KEY = "littleWorshiperStateAr";
 
         let state = {
             name: "",
-            gender: "", // 'boy' or 'girl'
-            city: "Madinah", // المدينة الافتراضية
+            gender: "",
+            city: "Madinah",
             totalStars: 0,
             lastLoginDate: "",
             lastMonthChecked: "",
@@ -333,7 +313,6 @@
         let activePrayerKey = null;
         let animationFrameId = null;
         let clockIntervalId = null;
-
         let audioCtx = null;
 
         const prayerKeys = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -347,7 +326,6 @@
             "Fajr (Tomorrow)": "الفجر (غداً)"
         };
 
-        // نظام النقاط (حسب الطلب: العشاء 3 ، الفجر 5 ، والباقي 1)
         const baseStarsPoints = {
             "Fajr": 5,
             "Dhuhr": 1,
@@ -356,7 +334,6 @@
             "Isha": 3
         };
 
-        // --- التهيئة Initialization ---
         window.onload = () => {
             loadState();
 
@@ -374,7 +351,6 @@
             if (saved) {
                 try {
                     state = { ...state, ...JSON.parse(saved) };
-                    // تحديث لمعالجة النسخ القديمة
                     if (state.totalStars === undefined) state.totalStars = 0;
                     if (!state.city) state.city = "Madinah";
                 } catch (e) {
@@ -388,23 +364,19 @@
             document.getElementById('totalStarsDisplay').textContent = state.totalStars;
         }
 
-        // --- نظام التعرف على الجنس ---
         function detectGender(name) {
             const n = name.trim();
-            // استثناءات لأسماء ذكور تنتهي بعلامات تأنيث أو مقصورة
             const maleExceptions = ['حمزة', 'أسامة', 'طلحة', 'حذيفة', 'معاوية', 'عروة', 'بهاء', 'علاء', 'ضياء', 'يحيى', 'عيسى', 'موسى', 'مصطفى', 'مرتضى', 'مجتبى', 'عبيدة'];
             if (maleExceptions.some(ex => n.includes(ex))) return 'boy';
 
-            // علامات التأنيث الشائعة في اللغة العربية
             if (n.endsWith('ة') || n.endsWith('اء') || n.endsWith('ى')) {
                 return 'girl';
             }
 
-            // أسماء إناث شائعة لا تنتهي بعلامات التأنيث
             const femaleNames = ['مريم', 'زينب', 'هند', 'نور', 'ريم', 'سعاد', 'جود', 'شهد', 'حور', 'ليان', 'غلا', 'رغد', 'رهف', 'تالا', 'لجين', 'ميس', 'لين', 'سجا', 'رؤى', 'أمل', 'عبير', 'حنان'];
             if (femaleNames.some(fn => n.includes(fn))) return 'girl';
 
-            return 'boy'; // الافتراضي إذا لم تتطابق الشروط
+            return 'boy';
         }
 
         function saveProfile() {
@@ -517,13 +489,10 @@
 
             document.getElementById('dashName').textContent = state.name;
 
-            // التاريخ
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString('ar-SA', options);
 
-            // تشغيل الساعة الفورية
             startRealTimeClock();
-
             updateDashboardIcons();
             startTimer();
         }
@@ -537,11 +506,10 @@
                 document.getElementById('currentTimeDisplay').textContent = timeString;
             }
 
-            tickClock(); // استدعاء فوري
+            tickClock();
             clockIntervalId = setInterval(tickClock, 1000);
         }
 
-        // --- جلب بيانات أوقات الصلاة ---
         async function fetchPrayerTimes() {
             const today = new Date();
             const dd = String(today.getDate()).padStart(2, '0');
@@ -550,8 +518,6 @@
             const dateStr = `${dd}-${mm}-${yyyy}`;
 
             const city = state.city || "Madinah";
-
-            // تقويم أم القرى
             const url = `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(city)}&country=Saudi%20Arabia&method=4`;
 
             const response = await fetch(url);
@@ -588,7 +554,6 @@
             return (new Date(date.getTime() - offset)).toISOString().split('T')[0];
         }
 
-        // --- المنطق الأساسي للوقت ---
         function startTimer() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
@@ -660,8 +625,6 @@
             showActivePrayerModal(pKey, isLate, isMosque, goldDeadline, now);
         }
 
-        // --- تحديث واجهة المستخدم UI ---
-
         function showActivePrayerModal(pKey, isLate, isMosque, deadlineMs, now) {
             const el = document.getElementById('activePrayerCard');
             if (el.classList.contains('hidden')) {
@@ -675,7 +638,6 @@
             document.getElementById('basePointsValue').textContent = baseStarsPoints[pKey] || 1;
 
             const mosqueBtn = document.getElementById('mosqueBtn');
-            // إخفاء زر المسجد بالكامل للبنات
             if (state.gender === 'girl') {
                 mosqueBtn.classList.add('hidden');
             } else {
@@ -775,8 +737,6 @@
             });
         }
 
-        // --- التفاعلات وحساب النقاط ---
-
         function completePrayer() {
             if (!activePrayerKey) return;
 
@@ -793,19 +753,15 @@
 
             state.history[todayStr][pKey].status = status;
 
-            // حساب النجوم
             if (!state.history[todayStr][pKey].pointsAwarded) {
                 let earnedPoints = baseStarsPoints[pKey] || 1;
 
-                // مضاعفة النقاط فقط للولد إذا ذهب للمسجد
                 if (state.gender === 'boy' && isMosque) {
                     earnedPoints *= 2;
                 }
 
                 state.totalStars += earnedPoints;
                 state.history[todayStr][pKey].pointsAwarded = true;
-
-                // عرض رسالة تهنئة بالنجوم
                 showSuccessMessage(pKey, earnedPoints);
             }
 
@@ -824,10 +780,9 @@
             if (!state.history[todayStr][activePrayerKey]) {
                 state.history[todayStr][activePrayerKey] = {};
             }
-            state.history[todayStr][activePrayerKey].mosque = true;
-            saveState();
 
-            evaluatePrayerState(Date.now());
+            state.history[todayStr][activePrayerKey].mosque = true;
+            completePrayer();
         }
 
         function showSuccessMessage(pKey, points) {
@@ -865,7 +820,6 @@
             document.getElementById('settingsModal').classList.remove('hidden');
         }
 
-        // --- إدارة البيانات ---
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
             const downloadAnchorNode = document.createElement('a');
@@ -907,10 +861,8 @@
             }
         }
 
-        // --- المؤثرات الصوتية والبصرية ---
         function fireConfetti(duration = 1500) {
             const end = Date.now() + duration;
-            // الألوان بناءً على الجنس
             const colors = state.gender === 'girl'
                 ? ['#f472b6', '#fbbf24', '#fbcfe8']
                 : ['#38bdf8', '#fbbf24', '#4ade80'];
@@ -949,7 +901,6 @@
             setTimeout(() => playChime(783.99, 0.6), 200);
             setTimeout(() => playChime(1046.50, 0.8), 300);
         }
-
     </script>
 </body>
 </html>
