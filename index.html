@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>المصلي الصغير</title>
+
+    <!-- PWA Meta Tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="المصلي الصغير">
+    <meta name="theme-color" content="#38bdf8" id="themeColorMeta">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Custom Config for Tailwind with CSS Variables -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+                        primaryLight: 'rgb(var(--color-primary-light) / <alpha-value>)',
+                        bgMain: 'rgb(var(--color-bg) / <alpha-value>)',
+                        success: '#4ade80', // Green
+                        warning: '#fbbf24', // Amber/Gold
+                    },
+                    fontFamily: {
+                        sans: ['"Tajawal"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* الألوان الافتراضية (للأولاد - أزرق سماوي) */
+        :root {
+            --color-primary: 56 189 248;       /* #38bdf8 */
+            --color-primary-light: 224 242 254; /* #e0f2fe */
+            --color-bg: 240 249 255;           /* #f0f9ff */
+        }
+
+        /* ألوان البنات (وردي) */
+        [data-theme="girl"] {
+            --color-primary: 244 114 182;       /* #f472b6 */
+            --color-primary-light: 252 231 243; /* #fce7f3 */
+            --color-bg: 253 242 248;           /* #fdf2f8 */
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: rgb(var(--color-bg));
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Smooth fade transitions */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .fade-out { animation: fadeOut 0.4s ease-out forwards; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+
+        .pulse-soft {
+            animation: pulseSoft 2s infinite;
+        }
+
+        @keyframes pulseSoft {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen w-screen overflow-hidden flex flex-col items-center">
+
+    <!-- شاشة التحميل -->
+    <div id="loadingScreen" class="fixed inset-0 bg-primaryLight z-50 flex flex-col items-center justify-center">
+        <i class="ph-duotone ph-mosque text-6xl text-primary animate-bounce mb-4"></i>
+        <h1 class="text-3xl font-bold text-slate-700">جاري تحميل أوقات الصلاة...</h1>
+    </div>
+
+    <!-- شاشة تسجيل الدخول / إدخال الاسم فقط (يتعرف على الجنس تلقائياً) -->
+    <div id="loginScreen" class="hidden fixed inset-0 bg-primaryLight z-40 flex flex-col items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center fade-in">
+            <i class="ph-duotone ph-star text-5xl text-warning mb-4 inline-block"></i>
+            <h1 class="text-4xl font-bold text-slate-800 mb-2">أهلاً بك!</h1>
+            <p class="text-slate-500 mb-6 text-lg">أخبرنا عن اسمك لكي نبدأ رحلتنا..</p>
+
+            <input type="text" id="nameInput" placeholder="اكتب اسمك هنا..." class="w-full text-center text-xl p-4 border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-primary mb-8 transition">
+
+            <button onclick="saveProfile()" class="w-full bg-primary hover:brightness-95 text-white font-bold text-2xl py-4 rounded-2xl shadow-lg transition transform active:scale-95">
+                لننطلق!
+            </button>
+        </div>
+    </div>
+
+    <!-- شاشة الترحيب اليومية -->
+    <div id="dailyWelcomeScreen" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-6">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center fade-in">
+            <i id="welcomeIcon" class="ph-duotone text-7xl text-warning mb-4 inline-block pulse-soft"></i>
+            <h1 class="text-4xl font-bold text-slate-800 mb-2">
+                <span id="dynamicGreeting">أهلاً</span>، <span id="welcomeName" class="text-primary"></span>!
+            </h1>
+            <p class="text-slate-500 mb-8 text-lg">مستعد لجمع النجوم وأداء الصلوات؟</p>
+            <button onclick="startDay()" class="w-full bg-success hover:bg-green-500 text-white font-bold text-2xl py-5 rounded-2xl shadow-[0_8px_0_0_#22c55e] active:shadow-[0_0px_0_0_#22c55e] active:translate-y-2 transition-all">
+                بسم الله!
+            </button>
+        </div>
+    </div>
+
+    <!-- لوحة التحكم الرئيسية -->
+    <div id="mainDashboard" class="hidden w-full max-w-2xl h-full flex-col relative">
+
+        <!-- الشريط العلوي والوقت/التاريخ/النجوم -->
+        <header class="bg-white px-6 pt-8 pb-6 rounded-b-3xl shadow-sm z-10 flex flex-col gap-5">
+            <div class="flex justify-between items-center">
+                <!-- معلومات الطفل والوقت -->
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-800">أهلاً، <span id="dashName" class="text-primary"></span>!</h2>
+                    <div class="flex items-center gap-2 text-slate-500 font-medium text-sm mt-2 bg-slate-50 inline-flex px-3 py-1.5 rounded-lg border border-slate-100">
+                        <i class="ph-fill ph-calendar-blank text-primary"></i> <span id="currentDateDisplay">--</span>
+                        <span class="text-slate-300 mx-1">|</span>
+                        <i class="ph-fill ph-clock text-primary"></i> <span id="currentTimeDisplay" dir="ltr">--:--</span>
+                    </div>
+                </div>
+
+                <!-- إجمالي النجوم والإعدادات -->
+                <div class="flex flex-col items-end gap-2">
+                    <button onclick="openSettings()" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-primary transition border border-slate-100">
+                        <i class="ph-fill ph-gear text-xl"></i>
+                    </button>
+                    <div class="bg-amber-50 border border-amber-200 text-amber-600 px-4 py-1.5 rounded-xl font-extrabold flex items-center gap-2 shadow-sm text-xl min-w-[5rem] justify-center">
+                        <span id="totalStarsDisplay">0</span> <i class="ph-fill ph-star pulse-soft"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- شريط متابعة الصلوات -->
+            <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex justify-between items-center" dir="rtl">
+                <div class="text-center" id="tracker-Fajr">
+                    <div class="w-12 h-12 rounded-full bg-slate-200 mx-auto flex items-center justify-center mb-1 transition-all" id="icon-Fajr">
+                        <i class="ph-fill ph-circle text-slate-300 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-500">الفجر</span>
+                </div>
+                <div class="text-center" id="tracker-Dhuhr">
+                    <div class="w-12 h-12 rounded-full bg-slate-200 mx-auto flex items-center justify-center mb-1 transition-all" id="icon-Dhuhr">
+                        <i class="ph-fill ph-circle text-slate-300 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-500">الظهر</span>
+                </div>
+                <div class="text-center" id="tracker-Asr">
+                    <div class="w-12 h-12 rounded-full bg-slate-200 mx-auto flex items-center justify-center mb-1 transition-all" id="icon-Asr">
+                        <i class="ph-fill ph-circle text-slate-300 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-500">العصر</span>
+                </div>
+                <div class="text-center" id="tracker-Maghrib">
+                    <div class="w-12 h-12 rounded-full bg-slate-200 mx-auto flex items-center justify-center mb-1 transition-all" id="icon-Maghrib">
+                        <i class="ph-fill ph-circle text-slate-300 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-500">المغرب</span>
+                </div>
+                <div class="text-center" id="tracker-Isha">
+                    <div class="w-12 h-12 rounded-full bg-slate-200 mx-auto flex items-center justify-center mb-1 transition-all" id="icon-Isha">
+                        <i class="ph-fill ph-circle text-slate-300 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-bold text-slate-500">العشاء</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- منطقة المحتوى الرئيسية -->
+        <main class="flex-1 overflow-y-auto p-6 flex flex-col justify-center items-center relative">
+
+            <!-- عداد الصلاة القادمة -->
+            <div id="countdownWidget" class="bg-white rounded-3xl p-8 shadow-lg w-full text-center border-4 border-primaryLight relative overflow-hidden">
+                <div class="absolute -top-10 -left-10 text-primary opacity-10">
+                    <i class="ph-fill ph-clock text-9xl"></i>
+                </div>
+
+                <h3 class="text-slate-500 font-bold text-lg mb-2 relative z-10">الصلاة القادمة</h3>
+                <h2 class="text-5xl font-extrabold text-primary mb-6 relative z-10" id="nextPrayerName">--</h2>
+
+                <div class="flex justify-center items-end gap-2 text-slate-700 relative z-10" dir="ltr">
+                    <div class="text-center">
+                        <span class="text-5xl font-black block leading-none" id="cd-hours">00</span>
+                        <span class="text-sm font-bold text-slate-400">ساعة</span>
+                    </div>
+                    <span class="text-3xl font-bold pb-4">:</span>
+                    <div class="text-center">
+                        <span class="text-5xl font-black block leading-none" id="cd-mins">00</span>
+                        <span class="text-sm font-bold text-slate-400">دقيقة</span>
+                    </div>
+                    <span class="text-3xl font-bold pb-4">:</span>
+                    <div class="text-center w-16">
+                        <span class="text-5xl font-black block leading-none text-slate-400" id="cd-secs">00</span>
+                        <span class="text-sm font-bold text-slate-300">ثانية</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- نافذة وقت الصلاة النشط -->
+            <div id="activePrayerCard" class="hidden absolute inset-0 m-6 bg-white rounded-3xl shadow-2xl border-4 border-success p-8 flex-col justify-center items-center text-center z-20">
+                <div class="pulse-soft bg-green-100 text-success p-6 rounded-full mb-4">
+                    <i class="ph-fill ph-mosque text-7xl"></i>
+                </div>
+                <h2 class="text-4xl font-extrabold text-slate-800 mb-2">حان وقت صلاة <span id="activePrayerName" class="text-success"></span>!</h2>
+
+                <div id="prayerPointsBadge" class="bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-sm font-bold mb-4 flex items-center gap-1">
+                    المكافأة: <span id="basePointsValue"></span> <i class="ph-fill ph-star"></i>
+                </div>
+
+                <p class="text-slate-500 mb-6 text-lg" id="activePrayerSubtitle">أحب الأعمال إلى الله الصلاة على وقتها.</p>
+
+                <div class="w-full bg-slate-100 rounded-full h-4 mb-8 overflow-hidden relative">
+                    <div id="timeRemainingBar" class="bg-warning h-full transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+                </div>
+
+                <div class="flex flex-col gap-4 w-full">
+                    <button onclick="completePrayer()" class="w-full bg-success hover:bg-green-500 text-white font-bold text-2xl py-5 rounded-2xl shadow-[0_6px_0_0_#16a34a] active:shadow-[0_0px_0_0_#16a34a] active:translate-y-1.5 transition-all flex justify-center items-center gap-3">
+                        <i class="ph-fill ph-check-circle text-3xl"></i> صليت!
+                    </button>
+
+                    <button onclick="goingToMosque()" id="mosqueBtn" class="w-full bg-primary hover:brightness-95 text-white font-bold text-2xl py-4 rounded-2xl shadow-[0_6px_0_0_var(--color-primary)] active:shadow-[0_0px_0_0_var(--color-primary)] active:translate-y-1.5 transition-all flex justify-center items-center gap-3">
+                        <i class="ph-fill ph-users text-3xl"></i> ذاهب للمسجد <span class="text-sm bg-white/20 px-2 py-1 rounded-lg mr-2 font-normal whitespace-nowrap">نقاط مضاعفة!</span>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- نافذة الرسائل المنبثقة -->
+    <div id="messageModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 fade-in">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-sm text-center relative">
+            <button onclick="closeModal('messageModal')" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600">
+                <i class="ph-bold ph-x text-2xl"></i>
+            </button>
+            <div id="messageModalIcon" class="mb-4"></div>
+            <h2 id="messageModalTitle" class="text-2xl font-bold text-slate-800 mb-2"></h2>
+            <p id="messageModalText" class="text-slate-600 text-lg mb-4"></p>
+            <div id="earnedPointsDiv" class="hidden font-bold text-2xl text-amber-500 flex justify-center items-center gap-2">
+                +<span id="earnedPointsText"></span> <i class="ph-fill ph-star"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة الإعدادات -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 fade-in">
+        <div class="bg-white p-6 rounded-3xl shadow-xl w-full max-w-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">الإعدادات</h2>
+                <button onclick="closeModal('settingsModal')" class="text-slate-400 hover:text-slate-600">
+                    <i class="ph-bold ph-x text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+
+                <!-- اختيار المدينة -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label class="block text-slate-700 font-bold mb-2">المدينة (لحساب أوقات الصلاة):</label>
+                    <select id="citySelect" onchange="changeCity(this.value)" class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:outline-none bg-white text-slate-800 text-lg">
+                        <option value="Madinah">المدينة المنورة</option>
+                        <option value="Makkah">مكة المكرمة</option>
+                        <option value="Riyadh">الرياض</option>
+                        <option value="Jeddah">جدة</option>
+                        <option value="Dammam">الدمام</option>
+                        <option value="Abha">أبها</option>
+                        <option value="Tabuk">تبوك</option>
+                    </select>
+                </div>
+
+                <button onclick="exportData()" class="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-3 px-4 rounded-xl flex items-center justify-between transition text-lg border border-slate-200">
+                    <span>حفظ تقدمي (تصدير)</span>
+                    <i class="ph-bold ph-download-simple"></i>
+                </button>
+
+                <label class="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold py-3 px-4 rounded-xl flex items-center justify-between transition cursor-pointer text-lg border border-slate-200">
+                    <span>استعادة التقدم (استيراد)</span>
+                    <i class="ph-bold ph-upload-simple"></i>
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+                </label>
+
+                <button onclick="resetApp()" class="w-full mt-4 bg-red-50 text-red-600 font-bold py-3 px-4 rounded-xl border border-red-200 flex items-center justify-center gap-2 text-lg hover:bg-red-100 transition">
+                    <i class="ph-bold ph-trash"></i> حذف جميع البيانات
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- إدارة الحالة State Management ---
+        const APP_VERSION = "1.2.0";
+        const STORAGE_KEY = "littleWorshiperStateAr";
+
+        let state = {
+            name: "",
+            gender: "", // 'boy' or 'girl'
+            city: "Madinah", // المدينة الافتراضية
+            totalStars: 0,
+            lastLoginDate: "",
+            lastMonthChecked: "",
+            history: {},
+        };
+
+        let prayerTimes = {};
+        let nextPrayerKey = null;
+        let activePrayerKey = null;
+        let animationFrameId = null;
+        let clockIntervalId = null;
+
+        let audioCtx = null;
+
+        const prayerKeys = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+        const prayerNamesAr = {
+            "Fajr": "الفجر",
+            "Dhuhr": "الظهر",
+            "Asr": "العصر",
+            "Maghrib": "المغرب",
+            "Isha": "العشاء",
+            "Fajr (Tomorrow)": "الفجر (غداً)"
+        };
+
+        // نظام النقاط (حسب الطلب: العشاء 3 ، الفجر 5 ، والباقي 1)
+        const baseStarsPoints = {
+            "Fajr": 5,
+            "Dhuhr": 1,
+            "Asr": 1,
+            "Maghrib": 1,
+            "Isha": 3
+        };
+
+        // --- التهيئة Initialization ---
+        window.onload = () => {
+            loadState();
+
+            if (!state.name) {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+            } else {
+                applyTheme();
+                initApp();
+            }
+        };
+
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    state = { ...state, ...JSON.parse(saved) };
+                    // تحديث لمعالجة النسخ القديمة
+                    if (state.totalStars === undefined) state.totalStars = 0;
+                    if (!state.city) state.city = "Madinah";
+                } catch (e) {
+                    console.error("فشل في تحميل البيانات", e);
+                }
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            document.getElementById('totalStarsDisplay').textContent = state.totalStars;
+        }
+
+        // --- نظام التعرف على الجنس ---
+        function detectGender(name) {
+            const n = name.trim();
+            // استثناءات لأسماء ذكور تنتهي بعلامات تأنيث أو مقصورة
+            const maleExceptions = ['حمزة', 'أسامة', 'طلحة', 'حذيفة', 'معاوية', 'عروة', 'بهاء', 'علاء', 'ضياء', 'يحيى', 'عيسى', 'موسى', 'مصطفى', 'مرتضى', 'مجتبى', 'عبيدة'];
+            if (maleExceptions.some(ex => n.includes(ex))) return 'boy';
+
+            // علامات التأنيث الشائعة في اللغة العربية
+            if (n.endsWith('ة') || n.endsWith('اء') || n.endsWith('ى')) {
+                return 'girl';
+            }
+
+            // أسماء إناث شائعة لا تنتهي بعلامات التأنيث
+            const femaleNames = ['مريم', 'زينب', 'هند', 'نور', 'ريم', 'سعاد', 'جود', 'شهد', 'حور', 'ليان', 'غلا', 'رغد', 'رهف', 'تالا', 'لجين', 'ميس', 'لين', 'سجا', 'رؤى', 'أمل', 'عبير', 'حنان'];
+            if (femaleNames.some(fn => n.includes(fn))) return 'girl';
+
+            return 'boy'; // الافتراضي إذا لم تتطابق الشروط
+        }
+
+        function saveProfile() {
+            const nameInput = document.getElementById('nameInput').value.trim();
+            if (nameInput) {
+                state.name = nameInput;
+                state.gender = detectGender(nameInput);
+
+                if (!state.city) state.city = "Madinah";
+
+                saveState();
+
+                applyTheme();
+                document.getElementById('loginScreen').classList.add('hidden');
+                initApp();
+            } else {
+                alert("الرجاء كتابة اسمك لننطلق!");
+            }
+        }
+
+        async function changeCity(newCity) {
+            state.city = newCity;
+            saveState();
+
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            try {
+                await fetchPrayerTimes();
+                updateDashboardIcons();
+                const now = Date.now();
+                evaluatePrayerState(now);
+                document.getElementById('loadingScreen').classList.add('hidden');
+            } catch(e) {
+                alert("حدث خطأ أثناء تحديث أوقات الصلاة. تأكد من اتصالك بالإنترنت.");
+                document.getElementById('loadingScreen').classList.add('hidden');
+            }
+        }
+
+        function applyTheme() {
+            if (state.gender === 'girl') {
+                document.body.setAttribute('data-theme', 'girl');
+                document.getElementById('themeColorMeta').setAttribute('content', '#f472b6');
+            } else {
+                document.body.removeAttribute('data-theme');
+                document.getElementById('themeColorMeta').setAttribute('content', '#38bdf8');
+            }
+            document.getElementById('totalStarsDisplay').textContent = state.totalStars;
+        }
+
+        async function initApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('loadingScreen').classList.remove('hidden');
+
+            const today = getLocalDateString(new Date());
+            const needsWelcome = state.lastLoginDate !== today;
+
+            try {
+                await fetchPrayerTimes();
+                document.getElementById('loadingScreen').classList.add('hidden');
+
+                if (needsWelcome) {
+                    setupDailyWelcome();
+                } else {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    startDashboard();
+                }
+            } catch (error) {
+                console.error("خطأ في التهيئة:", error);
+                alert("فشل تحميل أوقات الصلاة. يرجى التحقق من اتصالك بالإنترنت.");
+            }
+        }
+
+        function setupDailyWelcome() {
+            const hour = new Date().getHours();
+            const greetingEl = document.getElementById('dynamicGreeting');
+            const iconEl = document.getElementById('welcomeIcon');
+
+            if (hour >= 4 && hour < 12) {
+                greetingEl.textContent = "صباح الخير";
+                iconEl.className = "ph-duotone ph-sun text-7xl text-warning mb-4 inline-block pulse-soft";
+            } else {
+                greetingEl.textContent = "مساء الخير";
+                iconEl.className = "ph-duotone ph-moon-stars text-7xl text-indigo-500 mb-4 inline-block pulse-soft";
+            }
+
+            document.getElementById('welcomeName').textContent = state.name;
+            document.getElementById('dailyWelcomeScreen').classList.remove('hidden');
+        }
+
+        function startDay() {
+            const today = getLocalDateString(new Date());
+            state.lastLoginDate = today;
+            saveState();
+
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            playChime(440, 0.1);
+
+            document.getElementById('dailyWelcomeScreen').classList.add('hidden');
+            startDashboard();
+        }
+
+        function startDashboard() {
+            document.getElementById('mainDashboard').classList.remove('hidden');
+            document.getElementById('mainDashboard').classList.add('flex');
+
+            document.getElementById('dashName').textContent = state.name;
+
+            // التاريخ
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDateDisplay').textContent = new Date().toLocaleDateString('ar-SA', options);
+
+            // تشغيل الساعة الفورية
+            startRealTimeClock();
+
+            updateDashboardIcons();
+            startTimer();
+        }
+
+        function startRealTimeClock() {
+            if (clockIntervalId) clearInterval(clockIntervalId);
+
+            function tickClock() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('currentTimeDisplay').textContent = timeString;
+            }
+
+            tickClock(); // استدعاء فوري
+            clockIntervalId = setInterval(tickClock, 1000);
+        }
+
+        // --- جلب بيانات أوقات الصلاة ---
+        async function fetchPrayerTimes() {
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            const dateStr = `${dd}-${mm}-${yyyy}`;
+
+            const city = state.city || "Madinah";
+
+            // تقويم أم القرى
+            const url = `https://api.aladhan.com/v1/timingsByCity/${dateStr}?city=${encodeURIComponent(city)}&country=Saudi%20Arabia&method=4`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.code !== 200) throw new Error("API Error");
+
+            const timings = data.data.timings;
+
+            prayerTimes = {
+                Fajr: parseTimeStr(timings.Fajr),
+                Sunrise: parseTimeStr(timings.Sunrise),
+                Dhuhr: parseTimeStr(timings.Dhuhr),
+                Asr: parseTimeStr(timings.Asr),
+                Maghrib: parseTimeStr(timings.Maghrib),
+                Isha: parseTimeStr(timings.Isha)
+            };
+
+            const todayStr = getLocalDateString(today);
+            if (!state.history[todayStr]) {
+                state.history[todayStr] = {};
+            }
+        }
+
+        function parseTimeStr(timeStr) {
+            const [hours, mins] = timeStr.split(':');
+            const d = new Date();
+            d.setHours(parseInt(hours, 10), parseInt(mins, 10), 0, 0);
+            return d;
+        }
+
+        function getLocalDateString(date) {
+            const offset = date.getTimezoneOffset() * 60000;
+            return (new Date(date.getTime() - offset)).toISOString().split('T')[0];
+        }
+
+        // --- المنطق الأساسي للوقت ---
+        function startTimer() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            function tick() {
+                const now = Date.now();
+                evaluatePrayerState(now);
+                animationFrameId = requestAnimationFrame(tick);
+            }
+
+            animationFrameId = requestAnimationFrame(tick);
+        }
+
+        function evaluatePrayerState(now) {
+            const todayStr = getLocalDateString(new Date(now));
+            let foundActive = false;
+
+            for (let i = 0; i < prayerKeys.length; i++) {
+                const pKey = prayerKeys[i];
+                const pTime = prayerTimes[pKey].getTime();
+
+                let windowEndTime;
+                if (pKey === "Fajr") {
+                    windowEndTime = prayerTimes.Sunrise.getTime();
+                } else if (i < prayerKeys.length - 1) {
+                    windowEndTime = prayerTimes[prayerKeys[i+1]].getTime();
+                } else {
+                    const d = new Date(now);
+                    d.setHours(23, 59, 59, 999);
+                    windowEndTime = d.getTime();
+                }
+
+                if (now >= pTime && now < windowEndTime) {
+                    handleActivePrayer(pKey, pTime, windowEndTime, now, todayStr);
+                    foundActive = true;
+
+                    if (i < prayerKeys.length - 1) {
+                        nextPrayerKey = prayerKeys[i+1];
+                    } else {
+                        nextPrayerKey = "Fajr (Tomorrow)";
+                    }
+                    break;
+                }
+            }
+
+            if (!foundActive && now < prayerTimes.Fajr.getTime()) {
+                nextPrayerKey = "Fajr";
+                hideActivePrayerModal();
+            }
+
+            updateCountdownUI(now);
+        }
+
+        function handleActivePrayer(pKey, startTime, endTime, now, todayStr) {
+            const history = state.history[todayStr][pKey];
+
+            if (history && history.status) {
+                hideActivePrayerModal();
+                return;
+            }
+
+            activePrayerKey = pKey;
+
+            const isMosque = history && history.mosque;
+            let goldDuration = (pKey === "Fajr") ? (endTime - startTime) : ((isMosque ? 60 : 30) * 60 * 1000);
+            const goldDeadline = startTime + goldDuration;
+
+            const isLate = now > goldDeadline;
+
+            showActivePrayerModal(pKey, isLate, isMosque, goldDeadline, now);
+        }
+
+        // --- تحديث واجهة المستخدم UI ---
+
+        function showActivePrayerModal(pKey, isLate, isMosque, deadlineMs, now) {
+            const el = document.getElementById('activePrayerCard');
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+                document.getElementById('countdownWidget').classList.add('hidden');
+                playChime(600, 0.5);
+            }
+
+            document.getElementById('activePrayerName').textContent = prayerNamesAr[pKey];
+            document.getElementById('basePointsValue').textContent = baseStarsPoints[pKey] || 1;
+
+            const mosqueBtn = document.getElementById('mosqueBtn');
+            // إخفاء زر المسجد بالكامل للبنات
+            if (state.gender === 'girl') {
+                mosqueBtn.classList.add('hidden');
+            } else {
+                if (isMosque) {
+                    mosqueBtn.classList.add('hidden');
+                    document.getElementById('activePrayerSubtitle').innerHTML = `تقبل الله خطواتك إلى المسجد!<br><span class="text-sm font-bold text-primary">تم تمديد الوقت ومضاعفة النجوم.</span>`;
+                } else {
+                    mosqueBtn.classList.remove('hidden');
+                    document.getElementById('activePrayerSubtitle').textContent = "أحب الأعمال إلى الله الصلاة على وقتها.";
+                }
+            }
+
+            const bar = document.getElementById('timeRemainingBar');
+            if (!isLate) {
+                const totalDuration = deadlineMs - prayerTimes[pKey].getTime();
+                const remaining = deadlineMs - now;
+                const percent = Math.max(0, (remaining / totalDuration) * 100);
+                bar.style.width = `${percent}%`;
+                bar.className = `h-full transition-all duration-1000 ease-linear ${percent > 20 ? 'bg-success' : 'bg-warning'}`;
+            } else {
+                bar.style.width = `100%`;
+                bar.className = `h-full transition-all duration-1000 ease-linear bg-slate-300`;
+                document.getElementById('activePrayerSubtitle').textContent = "تأخر الوقت قليلاً. بادر بالصلاة الآن لتحصل على الثواب!";
+            }
+        }
+
+        function hideActivePrayerModal() {
+            const el = document.getElementById('activePrayerCard');
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+            document.getElementById('countdownWidget').classList.remove('hidden');
+            activePrayerKey = null;
+        }
+
+        function updateCountdownUI(now) {
+            if (!nextPrayerKey) return;
+
+            document.getElementById('nextPrayerName').textContent = prayerNamesAr[nextPrayerKey];
+
+            let targetTime;
+            if (nextPrayerKey === "Fajr (Tomorrow)") {
+                targetTime = prayerTimes.Fajr.getTime() + (24 * 60 * 60 * 1000);
+            } else {
+                targetTime = prayerTimes[nextPrayerKey].getTime();
+            }
+
+            const diff = Math.max(0, targetTime - now);
+
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
+            document.getElementById('cd-mins').textContent = String(m).padStart(2, '0');
+            document.getElementById('cd-secs').textContent = String(s).padStart(2, '0');
+        }
+
+        function updateDashboardIcons() {
+            const todayStr = getLocalDateString(new Date());
+            const todayHistory = state.history[todayStr] || {};
+            const now = Date.now();
+
+            prayerKeys.forEach((pKey, index) => {
+                const iconContainer = document.getElementById(`icon-${pKey}`);
+                iconContainer.innerHTML = '';
+                iconContainer.className = "w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-1 transition-all shadow-sm ";
+
+                const statusData = todayHistory[pKey];
+                const pTime = prayerTimes[pKey] ? prayerTimes[pKey].getTime() : Infinity;
+
+                let nextTime = Infinity;
+                if (pKey === "Fajr") nextTime = prayerTimes.Sunrise.getTime();
+                else if (index < prayerKeys.length - 1) nextTime = prayerTimes[prayerKeys[index+1]].getTime();
+                else {
+                    let d = new Date(); d.setHours(23,59,59); nextTime = d.getTime();
+                }
+
+                if (statusData && statusData.status) {
+                    if (statusData.status === 'gold') {
+                        iconContainer.classList.add('bg-amber-50');
+                        iconContainer.innerHTML = `<i class="ph-fill ph-star text-warning text-3xl drop-shadow-sm pulse-soft"></i>`;
+                    } else if (statusData.status === 'green') {
+                        iconContainer.classList.add('bg-green-50');
+                        iconContainer.innerHTML = `<i class="ph-fill ph-star text-success text-2xl drop-shadow-sm"></i>`;
+                    }
+                } else if (now > nextTime) {
+                    iconContainer.classList.add('bg-slate-100', 'cursor-pointer', 'hover:bg-slate-200');
+                    iconContainer.innerHTML = `<i class="ph-fill ph-cloud text-slate-400 text-2xl"></i>`;
+                    iconContainer.onclick = () => showMissedMessage(pKey);
+                } else if (now >= pTime && now < nextTime) {
+                    iconContainer.classList.add('bg-primaryLight', 'ring-2', 'ring-primary', 'ring-offset-2');
+                    iconContainer.innerHTML = `<i class="ph-duotone ph-clock text-primary text-2xl animate-spin-slow" style="animation: spin 4s linear infinite;"></i>`;
+                } else {
+                    iconContainer.classList.add('bg-white', 'border', 'border-slate-200');
+                    iconContainer.innerHTML = `<i class="ph-bold ph-circle text-slate-200 text-xl"></i>`;
+                }
+            });
+        }
+
+        // --- التفاعلات وحساب النقاط ---
+
+        function completePrayer() {
+            if (!activePrayerKey) return;
+
+            const now = Date.now();
+            const pKey = activePrayerKey;
+            const startTime = prayerTimes[pKey].getTime();
+            const todayStr = getLocalDateString(new Date(now));
+
+            if (!state.history[todayStr][pKey]) state.history[todayStr][pKey] = {};
+            const isMosque = state.history[todayStr][pKey].mosque;
+
+            const goldDuration = (pKey === "Fajr") ? (prayerTimes.Sunrise.getTime() - startTime) : ((isMosque ? 60 : 30) * 60 * 1000);
+            const status = (now <= startTime + goldDuration) ? 'gold' : 'green';
+
+            state.history[todayStr][pKey].status = status;
+
+            // حساب النجوم
+            if (!state.history[todayStr][pKey].pointsAwarded) {
+                let earnedPoints = baseStarsPoints[pKey] || 1;
+
+                // مضاعفة النقاط فقط للولد إذا ذهب للمسجد
+                if (state.gender === 'boy' && isMosque) {
+                    earnedPoints *= 2;
+                }
+
+                state.totalStars += earnedPoints;
+                state.history[todayStr][pKey].pointsAwarded = true;
+
+                // عرض رسالة تهنئة بالنجوم
+                showSuccessMessage(pKey, earnedPoints);
+            }
+
+            saveState();
+            fireConfetti();
+            playSuccessSound();
+
+            updateDashboardIcons();
+            hideActivePrayerModal();
+        }
+
+        function goingToMosque() {
+            if (!activePrayerKey) return;
+
+            const todayStr = getLocalDateString(new Date());
+            if (!state.history[todayStr][activePrayerKey]) {
+                state.history[todayStr][activePrayerKey] = {};
+            }
+            state.history[todayStr][activePrayerKey].mosque = true;
+            saveState();
+
+            evaluatePrayerState(Date.now());
+        }
+
+        function showSuccessMessage(pKey, points) {
+            const modal = document.getElementById('messageModal');
+            document.getElementById('messageModalIcon').innerHTML = `<i class="ph-fill ph-hands-praying text-6xl text-success"></i>`;
+            document.getElementById('messageModalTitle').textContent = `تقبل الله يا بطل!`;
+            document.getElementById('messageModalText').textContent = `لقد أتممت صلاة ${prayerNamesAr[pKey]} بنجاح.`;
+
+            const earnedDiv = document.getElementById('earnedPointsDiv');
+            earnedDiv.classList.remove('hidden');
+            document.getElementById('earnedPointsText').textContent = points;
+
+            modal.classList.remove('hidden');
+        }
+
+        function showMissedMessage(pKey) {
+            const modal = document.getElementById('messageModal');
+            document.getElementById('messageModalIcon').innerHTML = `<i class="ph-fill ph-cloud-rain text-6xl text-slate-400"></i>`;
+            document.getElementById('messageModalTitle').textContent = `فاتتك صلاة ${prayerNamesAr[pKey]}؟`;
+            document.getElementById('messageModalText').textContent = "سنعوضها في الصلاة القادمة يا بطل! الله يحب المحاولين ولن نستسلم.";
+
+            document.getElementById('earnedPointsDiv').classList.add('hidden');
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openSettings() {
+            if (state.city) {
+                document.getElementById('citySelect').value = state.city;
+            }
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        // --- إدارة البيانات ---
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "المصلي_الصغير_نسخة.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            closeModal('settingsModal');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && importedState.name && importedState.history) {
+                        state = importedState;
+                        saveState();
+                        alert("تم استعادة التقدم بنجاح!");
+                        location.reload();
+                    } else {
+                        alert("ملف النسخة الاحتياطية غير صالح.");
+                    }
+                } catch (err) {
+                    alert("حدث خطأ أثناء قراءة الملف.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetApp() {
+            if (confirm("هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء.")) {
+                localStorage.removeItem(STORAGE_KEY);
+                location.reload();
+            }
+        }
+
+        // --- المؤثرات الصوتية والبصرية ---
+        function fireConfetti(duration = 1500) {
+            const end = Date.now() + duration;
+            // الألوان بناءً على الجنس
+            const colors = state.gender === 'girl'
+                ? ['#f472b6', '#fbbf24', '#fbcfe8']
+                : ['#38bdf8', '#fbbf24', '#4ade80'];
+
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: colors });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: colors });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        function playChime(freq = 600, duration = 0.5) {
+            if (!audioCtx || audioCtx.state !== 'running') return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccessSound() {
+            if (!audioCtx || audioCtx.state !== 'running') return;
+            playChime(523.25, 0.4);
+            setTimeout(() => playChime(659.25, 0.4), 100);
+            setTimeout(() => playChime(783.99, 0.6), 200);
+            setTimeout(() => playChime(1046.50, 0.8), 300);
+        }
+
+    </script>
+</body>
+</html>
